@@ -162,7 +162,7 @@ jobs:
         run: |
           helm upgrade --install boarding-week2 \
             ./helm/boarding-week2 \
-            --set image.repository=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }} \
+            --set image.repository=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }} \
             --set image.tag=${{ env.IMAGE_TAG }}
 
       - name: Verify deployment
