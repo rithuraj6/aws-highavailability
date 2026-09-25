@@ -10,10 +10,11 @@ on:
 
 env:
   AWS_REGION: ap-south-1
-  AWS_ACCOUNT_ID: "551162198888"
+  ECR_REGISTRY: 551162198888.dkr.ecr.ap-south-1.amazonaws.com
   ECR_REPOSITORY: boarding-week2
   EKS_CLUSTER: boarding-week2-eks
   IMAGE_TAG: ${{ github.sha }}
+
 
 jobs:
 
