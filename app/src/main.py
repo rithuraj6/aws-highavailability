@@ -1,4 +1,11 @@
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
+
+
+
+
+
+
 
 app = FastAPI(
     title="Boarding Week 2 Microservice",
@@ -42,3 +49,6 @@ def products():
             }
         ]
     }
+
+
+Instrumentator().instrument(app).expose(app)
