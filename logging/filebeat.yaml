@@ -1,0 +1,157 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: logging
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: filebeat
+  namespace: logging
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: filebeat
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+      - namespaces
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: filebeat
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: filebeat
+subjects:
+  - kind: ServiceAccount
+    name: filebeat
+    namespace: logging
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: filebeat-config
+  namespace: logging
+data:
+  filebeat.yml: |
+    filebeat.inputs:
+      - type: filestream
+        id: kubernetes-container-logs
+        enabled: true
+        prospector.scanner.symlinks: true
+        paths:
+          - /var/log/containers/*.log
+        parsers:
+          - container: ~
+
+    processors:
+      - add_kubernetes_metadata:
+          host: ${NODE_NAME}
+          matchers:
+            - logs_path:
+                logs_path: "/var/log/containers/"
+
+    output.elasticsearch:
+      hosts:
+        - "https://boarding-week2-es-http.logging.svc:9200"
+      username: "elastic"
+      password: "${ELASTIC_PASSWORD}"
+      ssl.certificate_authorities:
+        - /etc/filebeat/certs/ca.crt
+
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filebeat
+  namespace: logging
+spec:
+  selector:
+    matchLabels:
+      app: filebeat
+  template:
+    metadata:
+      labels:
+        app: filebeat
+    spec:
+      serviceAccountName: filebeat
+      tolerations:
+       - key: workload
+         operator: Equal
+         value: monitoring
+         effect: NoSchedule
+
+      containers:
+        - name: filebeat
+          image: docker.elastic.co/beats/filebeat:9.2.0
+          args:
+            - "-c"
+            - "/etc/filebeat.yml"
+            - "-e"
+
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+
+            - name: ELASTIC_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: boarding-week2-es-elastic-user
+                  key: elastic
+
+          securityContext:
+            runAsUser: 0
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 150m
+              memory: 128Mi
+
+          volumeMounts:
+            - name: config
+              mountPath: /etc/filebeat.yml
+              subPath: filebeat.yml
+              readOnly: true
+
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+
+            - name: ca
+              mountPath: /etc/filebeat/certs
+              readOnly: true
+
+      volumes:
+        - name: config
+          configMap:
+            name: filebeat-config
+
+        - name: varlog
+          hostPath:
+            path: /var/log
+
+        - name: ca
+          secret:
+            secretName: boarding-week2-es-http-certs-public
+            items:
+              - key: ca.crt
+                path: ca.crt

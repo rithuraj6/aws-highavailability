@@ -1,0 +1,36 @@
+apiVersion: kibana.k8s.elastic.co/v1
+kind: Kibana
+metadata:
+  name: boarding-week2
+  namespace: logging
+
+spec:
+  version: 9.2.0
+  count: 1
+
+  elasticsearchRef:
+    name: boarding-week2
+
+  podTemplate:
+    spec:
+      nodeSelector:
+        workload: monitoring
+
+      tolerations:
+        - key: workload
+          operator: Equal
+          value: monitoring
+          effect: NoSchedule
+
+      containers:
+        - name: kibana
+          env:
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=512"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi

@@ -25,7 +25,13 @@ spec:
         app: {{ .Release.Name }}
 
     spec:
+      nodeSelector:
+        {{- toYaml .Values.nodeSelector | nindent 8 }}
+
+
+
       containers:
+
         - name: boarding-week2
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}

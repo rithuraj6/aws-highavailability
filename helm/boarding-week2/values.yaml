@@ -5,6 +5,10 @@ image:
   tag: "1.0"
   pullPolicy: IfNotPresent
 
+nodeSelector:
+  eks.amazonaws.com/nodegroup: boarding-week2-ng
+
+
 service:
   type: ClusterIP
   port: 8000

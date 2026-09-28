@@ -153,7 +153,7 @@ jobs:
 
       - name: Verify EKS access
         run: |
-          kubectl get nodes
+          kubectl get pods -n default
 
       - name: Install Helm
         uses: azure/setup-helm@v4

@@ -1,0 +1,47 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1
+kind: Elasticsearch
+metadata:
+  name: boarding-week2
+  namespace: logging
+
+spec:
+  version: 9.2.0
+
+  nodeSets:
+    - name: default
+      count: 1
+
+      config:
+        node.store.allow_mmap: false
+
+      podTemplate:
+        spec:
+          nodeSelector:
+            workload: monitoring
+
+          tolerations:
+            - key: workload
+              operator: Equal
+              value: monitoring
+              effect: NoSchedule
+
+          containers:
+            - name: elasticsearch
+              resources:
+                requests:
+                  cpu: 1000m
+                  memory: 1536Mi
+                limits:
+                  cpu: 1500m
+                  memory: 1536Mi
+
+      volumeClaimTemplates:
+        - metadata:
+            name: elasticsearch-data
+          spec:
+            storageClassName: gp2
+            accessModes:
+              - ReadWriteOnce
+            resources:
+              requests:
+                storage: 5Gi
